@@ -1,0 +1,1171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent — Video & Dev Studio</title>
+<script src="https://js.puter.com/v2/"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;800&display=swap');
+
+  :root {
+    --bg: #0a0a0f;
+    --bg2: #111118;
+    --bg3: #1a1a26;
+    --border: #2a2a3a;
+    --border2: #3a3a50;
+    --accent: #7c6fff;
+    --accent2: #a78bfa;
+    --green: #34d399;
+    --red: #f87171;
+    --amber: #fbbf24;
+    --text: #e2e2f0;
+    --muted: #888899;
+    --font-mono: 'JetBrains Mono', monospace;
+    --font-display: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Top Bar ── */
+  header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 10px 20px;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 17px;
+    color: var(--accent2);
+    letter-spacing: -0.5px;
+  }
+
+  .logo span { color: var(--muted); font-weight: 400; }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  .status-label { color: var(--muted); font-size: 11px; }
+
+  .yt-badge {
+    margin-left: auto;
+    display: flex; align-items: center; gap: 8px;
+  }
+
+  .btn-sm {
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid var(--border2);
+    background: var(--bg3);
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .btn-sm:hover { border-color: var(--accent); background: rgba(124,111,255,0.1); }
+  .btn-sm.active { border-color: var(--green); color: var(--green); }
+
+  /* ── Tabs ── */
+  .tabs {
+    display: flex;
+    gap: 2px;
+    padding: 8px 20px 0;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .tab {
+    padding: 7px 16px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--muted);
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+
+  .tab:hover { color: var(--text); }
+  .tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+  /* ── Main Layout ── */
+  .workspace {
+    display: grid;
+    grid-template-columns: 1fr 380px;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  /* ── Chat / AI Panel ── */
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--border);
+    overflow: hidden;
+  }
+
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    scroll-behavior: smooth;
+  }
+
+  .messages::-webkit-scrollbar { width: 4px; }
+  .messages::-webkit-scrollbar-track { background: transparent; }
+  .messages::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  .msg {
+    max-width: 92%;
+    padding: 10px 14px;
+    border-radius: 10px;
+    line-height: 1.6;
+    font-size: 12.5px;
+    word-break: break-word;
+  }
+
+  .msg.user {
+    align-self: flex-end;
+    background: rgba(124,111,255,0.18);
+    border: 1px solid rgba(124,111,255,0.35);
+    color: #c4bfff;
+  }
+
+  .msg.ai {
+    align-self: flex-start;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    color: var(--text);
+  }
+
+  .msg.system {
+    align-self: center;
+    background: rgba(52,211,153,0.08);
+    border: 1px solid rgba(52,211,153,0.2);
+    color: var(--green);
+    font-size: 11px;
+    max-width: 80%;
+    text-align: center;
+  }
+
+  .msg.error {
+    align-self: flex-start;
+    background: rgba(248,113,113,0.08);
+    border: 1px solid rgba(248,113,113,0.25);
+    color: var(--red);
+  }
+
+  .msg .label {
+    font-size: 10px;
+    color: var(--muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .msg pre {
+    background: rgba(0,0,0,0.3);
+    border-radius: 6px;
+    padding: 8px;
+    overflow-x: auto;
+    font-size: 11.5px;
+    margin-top: 8px;
+    border: 1px solid var(--border);
+  }
+
+  .typing {
+    display: flex; gap: 4px; align-items: center; padding: 8px;
+  }
+  .typing span {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent);
+    animation: typing 1s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: 0.2s; }
+  .typing span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typing { 0%,100%{opacity:0.3;transform:scale(0.8)} 50%{opacity:1;transform:scale(1)} }
+
+  /* ── Input Area ── */
+  .input-area {
+    padding: 12px 16px;
+    background: var(--bg2);
+    border-top: 1px solid var(--border);
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  .input-area textarea {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+    padding: 9px 12px;
+    resize: none;
+    outline: none;
+    min-height: 40px;
+    max-height: 120px;
+    line-height: 1.5;
+    transition: border-color 0.2s;
+  }
+  .input-area textarea:focus { border-color: var(--accent); }
+  .input-area textarea::placeholder { color: var(--muted); }
+
+  .send-btn {
+    width: 40px; height: 40px;
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.2s, transform 0.1s;
+    flex-shrink: 0;
+  }
+  .send-btn:hover { background: var(--accent2); }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn svg { width: 16px; height: 16px; fill: #fff; }
+
+  /* ── Right Panel ── */
+  .right-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-tabs {
+    display: flex;
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .panel-tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 10px;
+    color: var(--muted);
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .panel-tab:hover { color: var(--text); }
+  .panel-tab.active { color: var(--accent2); border-bottom-color: var(--accent); background: rgba(124,111,255,0.05); }
+
+  .panel-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 14px;
+  }
+
+  .panel-content::-webkit-scrollbar { width: 3px; }
+  .panel-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── Tool Sections ── */
+  .section { margin-bottom: 18px; }
+
+  .section-title {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  .field-row { display: flex; gap: 6px; margin-bottom: 6px; }
+
+  input[type=text], input[type=number], select, textarea.small {
+    flex: 1;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 6px 9px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  input:focus, select:focus, textarea.small:focus { border-color: var(--accent); }
+  select option { background: var(--bg2); }
+
+  textarea.small { resize: none; height: 60px; }
+
+  .btn {
+    padding: 6px 12px;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+    border-radius: 6px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: 11px;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.15s;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent2); }
+  .btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .btn.primary:hover { background: var(--accent2); border-color: var(--accent2); }
+  .btn.danger:hover { border-color: var(--red); color: var(--red); }
+
+  /* ── Terminal Output ── */
+  .terminal-output {
+    background: #050508;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px;
+    height: 160px;
+    overflow-y: auto;
+    font-size: 11px;
+    line-height: 1.6;
+  }
+  .terminal-output .t-line { color: #aaffcc; }
+  .terminal-output .t-err { color: var(--red); }
+  .terminal-output .t-sys { color: var(--muted); }
+  .terminal-output::-webkit-scrollbar { width: 3px; }
+  .terminal-output::-webkit-scrollbar-thumb { background: var(--border2); }
+
+  /* ── Analytics Cards ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+  .stat-card {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+
+  .stat-card .label { font-size: 10px; color: var(--muted); margin-bottom: 4px; }
+  .stat-card .value { font-size: 20px; font-family: var(--font-display); font-weight: 600; color: var(--text); }
+  .stat-card .sub { font-size: 10px; color: var(--green); margin-top: 2px; }
+
+  /* ── Video List ── */
+  .video-item {
+    display: flex; gap: 10px; align-items: center;
+    padding: 8px;
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .video-item:hover { border-color: var(--accent); }
+  .video-item img { width: 60px; height: 38px; object-fit: cover; border-radius: 4px; background: var(--border); }
+  .video-item .vinfo { flex: 1; overflow: hidden; }
+  .video-item .vtitle { font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .video-item .vmeta { font-size: 10px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Quick Commands ── */
+  .quick-cmds { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 6px; }
+  .qcmd {
+    padding: 4px 9px;
+    background: rgba(124,111,255,0.1);
+    border: 1px solid rgba(124,111,255,0.3);
+    border-radius: 5px;
+    font-size: 10.5px;
+    color: var(--accent2);
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .qcmd:hover { background: rgba(124,111,255,0.25); }
+
+  /* ── Code Editor ── */
+  .code-editor {
+    width: 100%;
+    background: #050508;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: #aaffcc;
+    font-family: var(--font-mono);
+    font-size: 11.5px;
+    padding: 10px;
+    resize: vertical;
+    min-height: 100px;
+    outline: none;
+    line-height: 1.7;
+  }
+  .code-editor:focus { border-color: var(--accent); }
+
+  /* ── Scroll ── */
+  .tab-page { display: none; }
+  .tab-page.active { display: block; }
+
+  /* ── Upload progress ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent), var(--green));
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">agent<span>.studio</span></div>
+  <div class="status-dot" id="aiStatusDot"></div>
+  <div class="status-label" id="aiStatusLabel">AI ready</div>
+  <div class="yt-badge">
+    <div id="ytStatus" class="status-label">YouTube: not connected</div>
+    <button class="btn-sm" id="ytConnectBtn" onclick="connectYouTube()">Connect YT</button>
+  </div>
+</header>
+
+<!-- ── Tabs ── -->
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('chat')">💬 AI Chat</div>
+  <div class="tab" onclick="switchTab('terminal')">⚡ Terminal</div>
+  <div class="tab" onclick="switchTab('video')">🎬 Video Edit</div>
+  <div class="tab" onclick="switchTab('code')">{ } Code</div>
+  <div class="tab" onclick="switchTab('youtube')">▶ YouTube</div>
+  <div class="tab" onclick="switchTab('analytics')">📊 Analytics</div>
+</div>
+
+<!-- ── Workspace ── -->
+<div class="workspace">
+
+  <!-- ── Left: Chat/AI ── -->
+  <div class="chat-panel">
+    <div class="messages" id="messages">
+      <div class="msg system">
+        Puter AI connected — type a command or question below. The AI can run terminal commands, edit videos, write code, and manage your YouTube channel.
+      </div>
+    </div>
+    <div class="input-area">
+      <textarea id="chatInput" placeholder="Ask AI to run a command, edit a video, write code…" rows="1"
+        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+        oninput="autoResize(this)"></textarea>
+      <button class="send-btn" onclick="sendChat()">
+        <svg viewBox="0 0 24 24"><path d="M2 21l21-9L2 3v7l15 2-15 2z"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Right Panel ── -->
+  <div class="right-panel">
+    <div class="panel-tabs">
+      <div class="panel-tab active" onclick="switchPanel('tools')">Tools</div>
+      <div class="panel-tab" onclick="switchPanel('history')">History</div>
+    </div>
+
+    <div class="panel-content" id="toolsPanel">
+
+      <!-- TAB: CHAT - Quick prompts -->
+      <div class="tab-page active" id="panel-chat">
+        <div class="section">
+          <div class="section-title">Quick Prompts</div>
+          <div class="quick-cmds">
+            <div class="qcmd" onclick="quickPrompt('List all files in the current directory')">ls files</div>
+            <div class="qcmd" onclick="quickPrompt('Show system disk usage')">disk usage</div>
+            <div class="qcmd" onclick="quickPrompt('Show running processes')">processes</div>
+            <div class="qcmd" onclick="quickPrompt('What is my public IP address?')">my IP</div>
+            <div class="qcmd" onclick="quickPrompt('List installed Python packages')">pip list</div>
+            <div class="qcmd" onclick="quickPrompt('Check if FFmpeg is installed and show version')">ffmpeg check</div>
+            <div class="qcmd" onclick="quickPrompt('Write a Python script that downloads a YouTube video using yt-dlp')">yt-dlp script</div>
+            <div class="qcmd" onclick="quickPrompt('Write a bash script to batch resize all images in a folder to 1920x1080')">batch resize</div>
+            <div class="qcmd" onclick="quickPrompt('Show my YouTube channel statistics')">YT stats</div>
+            <div class="qcmd" onclick="quickPrompt('Help me write a video title and description optimized for YouTube SEO')">YT SEO help</div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Model</div>
+          <select id="modelSelect">
+            <option value="claude-sonnet-4-5">Claude Sonnet 4.5</option>
+            <option value="gpt-4o">GPT-4o</option>
+            <option value="gpt-4o-mini">GPT-4o mini</option>
+            <option value="gpt-5.3-codex">GPT-5.3 codex</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- TAB: TERMINAL -->
+      <div class="tab-page" id="panel-terminal">
+        <div class="section">
+          <div class="section-title">Command</div>
+          <div class="field-row">
+            <input type="text" id="termCmd" placeholder="e.g. ls -la" onkeydown="if(event.key==='Enter')runTerminal()">
+            <button class="btn primary" onclick="runTerminal()">Run</button>
+          </div>
+          <div class="field-row">
+            <input type="text" id="termCwd" placeholder="Working dir (default: ~)">
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Output</div>
+          <div class="terminal-output" id="termOutput">
+            <span class="t-sys">// output appears here</span>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Quick Run</div>
+          <div class="quick-cmds">
+            <div class="qcmd" onclick="fillCmd('ls -la')">ls -la</div>
+            <div class="qcmd" onclick="fillCmd('pwd')">pwd</div>
+            <div class="qcmd" onclick="fillCmd('df -h')">df -h</div>
+            <div class="qcmd" onclick="fillCmd('free -h')">free -h</div>
+            <div class="qcmd" onclick="fillCmd('pip list')">pip list</div>
+            <div class="qcmd" onclick="fillCmd('ffmpeg -version')">ffmpeg ver</div>
+            <div class="qcmd" onclick="fillCmd('python3 --version')">python ver</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: VIDEO -->
+      <div class="tab-page" id="panel-video">
+        <div class="section">
+          <div class="section-title">Trim Video</div>
+          <div class="field-row"><input type="text" id="trimIn" placeholder="Input file path"></div>
+          <div class="field-row">
+            <input type="text" id="trimStart" placeholder="Start (sec)" style="width:80px;flex:none">
+            <input type="text" id="trimDur" placeholder="Duration (sec)" style="width:90px;flex:none">
+            <input type="text" id="trimOut" placeholder="Output path">
+          </div>
+          <button class="btn primary" style="width:100%" onclick="videoTrim()">✂️ Trim</button>
+        </div>
+        <div class="section">
+          <div class="section-title">Merge Videos</div>
+          <div class="field-row"><textarea class="small" id="mergeFiles" placeholder="One file path per line"></textarea></div>
+          <div class="field-row"><input type="text" id="mergeOut" placeholder="Output path (merged.mp4)"></div>
+          <button class="btn primary" style="width:100%" onclick="videoMerge()">🔗 Merge</button>
+        </div>
+        <div class="section">
+          <div class="section-title">Extract Thumbnail</div>
+          <div class="field-row">
+            <input type="text" id="thumbIn" placeholder="Video path">
+            <input type="text" id="thumbTs" placeholder="00:00:05" style="width:80px;flex:none">
+          </div>
+          <div class="field-row"><input type="text" id="thumbOut" placeholder="thumbnail.jpg"></div>
+          <button class="btn primary" style="width:100%" onclick="videoThumb()">🖼️ Extract</button>
+        </div>
+        <div class="section">
+          <div class="section-title">Convert Format</div>
+          <div class="field-row">
+            <input type="text" id="convIn" placeholder="Input path">
+            <input type="text" id="convOut" placeholder="output.mp4">
+          </div>
+          <button class="btn primary" style="width:100%" onclick="videoConvert()">🔄 Convert</button>
+        </div>
+      </div>
+
+      <!-- TAB: CODE -->
+      <div class="tab-page" id="panel-code">
+        <div class="section">
+          <div class="section-title">Code Runner</div>
+          <div class="field-row">
+            <select id="codeLang">
+              <option value="python">Python</option>
+              <option value="bash">Bash</option>
+            </select>
+            <button class="btn primary" onclick="runCode()">▶ Run</button>
+          </div>
+          <textarea class="code-editor" id="codeInput" placeholder="# Write Python or Bash code here...
+import os
+print(os.listdir('.'))"></textarea>
+        </div>
+        <div class="section">
+          <div class="section-title">Output</div>
+          <div class="terminal-output" id="codeOutput">
+            <span class="t-sys">// output appears here</span>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Templates</div>
+          <div class="quick-cmds">
+            <div class="qcmd" onclick="loadTemplate('yt-dl')">yt-dlp download</div>
+            <div class="qcmd" onclick="loadTemplate('ffmpeg-py')">ffmpeg-python</div>
+            <div class="qcmd" onclick="loadTemplate('dir-scan')">dir scanner</div>
+            <div class="qcmd" onclick="loadTemplate('thumbnail-gen')">thumbnail gen</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB: YOUTUBE UPLOAD -->
+      <div class="tab-page" id="panel-youtube">
+        <div class="section">
+          <div class="section-title">Upload Video</div>
+          <div class="field-row"><input type="text" id="upFile" placeholder="Local file path"></div>
+          <div class="field-row"><input type="text" id="upTitle" placeholder="Video title"></div>
+          <textarea class="small" id="upDesc" placeholder="Description"></textarea>
+          <div class="field-row" style="margin-top:6px">
+            <input type="text" id="upTags" placeholder="tag1, tag2, tag3">
+            <select id="upPrivacy">
+              <option value="private">Private</option>
+              <option value="unlisted">Unlisted</option>
+              <option value="public">Public</option>
+            </select>
+          </div>
+          <button class="btn primary" style="width:100%;margin-top:6px" onclick="uploadVideo()">⬆ Upload to YouTube</button>
+          <div class="progress-bar" id="upProgressBar" style="display:none">
+            <div class="progress-fill" id="upProgressFill" style="width:0%"></div>
+          </div>
+          <div id="upResult" style="margin-top:8px;font-size:11px;color:var(--green)"></div>
+        </div>
+      </div>
+
+      <!-- TAB: ANALYTICS -->
+      <div class="tab-page" id="panel-analytics">
+        <div class="section">
+          <div class="section-title">Channel Stats</div>
+          <button class="btn primary" style="width:100%;margin-bottom:10px" onclick="loadAnalytics()">🔄 Refresh</button>
+          <div class="stat-grid" id="channelStats">
+            <div class="stat-card"><div class="label">Subscribers</div><div class="value" id="statSubs">—</div></div>
+            <div class="stat-card"><div class="label">Total Views</div><div class="value" id="statViews">—</div></div>
+            <div class="stat-card"><div class="label">Videos</div><div class="value" id="statVids">—</div></div>
+            <div class="stat-card"><div class="label">Channel</div><div class="value" id="statName" style="font-size:13px">—</div></div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">Recent Videos</div>
+          <div id="videoList"><span style="color:var(--muted);font-size:11px">Connect YouTube to load videos</span></div>
+        </div>
+      </div>
+
+    </div><!-- /panel-content -->
+  </div><!-- /right-panel -->
+</div><!-- /workspace -->
+
+<script>
+// ── State ────────────────────────────────────────────────────────────────────
+const API = 'http://localhost:5000';
+let chatHistory = [];
+let ytAuthenticated = false;
+let currentTab = 'chat';
+let currentPanel = 'tools';
+
+const SYSTEM_PROMPT = `You are an expert AI agent for a video editing and YouTube management studio.
+You help with: terminal/shell commands, video editing (FFmpeg), Python/Bash code, YouTube uploads and analytics.
+
+When the user wants to run a command, respond with:
+[CMD]: <shell command>
+
+When providing code to run, respond with:
+[CODE:python]: <code here>
+or [CODE:bash]: <code here>
+
+For video editing tasks, provide the specific FFmpeg command.
+For YouTube tasks, ask for required details if missing.
+Be concise and practical. When running commands, explain what the command does briefly.`;
+
+// ── Puter AI ─────────────────────────────────────────────────────────────────
+async function callAI(userMessage) {
+  const model = document.getElementById('modelSelect').value;
+  setAIStatus('thinking', 'AI thinking…');
+
+  chatHistory.push({ role: 'user', content: userMessage });
+
+  try {
+    const response = await puter.ai.chat(chatHistory, {
+      model: model,
+      system: SYSTEM_PROMPT,
+    });
+
+    const reply = response?.message?.content?.[0]?.text
+                || response?.text
+                || response?.message?.content
+                || String(response);
+
+    chatHistory.push({ role: 'assistant', content: reply });
+    setAIStatus('ready', 'AI ready');
+    return reply;
+  } catch (err) {
+    setAIStatus('error', 'AI error');
+    console.error(err);
+    return `Error contacting AI: ${err.message}`;
+  }
+}
+
+function setAIStatus(state, label) {
+  const dot = document.getElementById('aiStatusDot');
+  const lbl = document.getElementById('aiStatusLabel');
+  lbl.textContent = label;
+  dot.style.background = state === 'ready' ? 'var(--green)'
+    : state === 'thinking' ? 'var(--amber)'
+    : 'var(--red)';
+  dot.style.boxShadow = `0 0 6px ${dot.style.background}`;
+}
+
+// ── Chat ─────────────────────────────────────────────────────────────────────
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = '';
+  autoResize(input);
+
+  appendMsg(text, 'user');
+  showTyping();
+
+  const reply = await callAI(text);
+  removeTyping();
+  appendMsg(reply, 'ai');
+
+  // Auto-execute if AI returns a command
+  await autoExecuteReply(reply);
+}
+
+async function autoExecuteReply(reply) {
+  const cmdMatch = reply.match(/\[CMD\]:\s*(.+)/);
+  const codeMatch = reply.match(/\[CODE:(python|bash)\]:\s*([\s\S]+?)(?:\[\/CODE\]|$)/);
+
+  if (cmdMatch) {
+    const cmd = cmdMatch[1].trim();
+    appendMsg(`⚡ Running: \`${cmd}\``, 'system');
+    const output = await runTerminalCmd(cmd);
+    appendMsg(output, 'ai');
+    // Feed result back to AI
+    const followup = await callAI(`Terminal output:\n${output}\nBriefly summarize the result.`);
+    appendMsg(followup, 'ai');
+  }
+
+  if (codeMatch) {
+    const lang = codeMatch[1];
+    const code = codeMatch[2].trim();
+    appendMsg(`⚙️ Running ${lang} code…`, 'system');
+    const result = await apiPost('/api/code/run', { code, language: lang });
+    const out = result.stdout || result.stderr || result.error || 'No output';
+    appendMsg(`\`\`\`\n${out}\n\`\`\``, 'ai');
+  }
+}
+
+function appendMsg(text, type) {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.className = `msg ${type}`;
+
+  // Render code blocks
+  const rendered = text
+    .replace(/```([\s\S]*?)```/g, '<pre>$1</pre>')
+    .replace(/`([^`]+)`/g, '<code style="background:rgba(0,0,0,0.4);padding:1px 5px;border-radius:3px;font-size:11px">$1</code>');
+  div.innerHTML = rendered;
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function showTyping() {
+  const msgs = document.getElementById('messages');
+  const div = document.createElement('div');
+  div.id = 'typingIndicator';
+  div.className = 'msg ai';
+  div.innerHTML = '<div class="typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typingIndicator');
+  if (t) t.remove();
+}
+
+function quickPrompt(text) {
+  document.getElementById('chatInput').value = text;
+  sendChat();
+}
+
+// ── Terminal ──────────────────────────────────────────────────────────────────
+async function runTerminalCmd(cmd, cwd) {
+  return new Promise((resolve) => {
+    const out = [];
+    const es = new EventSource(
+      `${API}/api/terminal?cmd=${encodeURIComponent(cmd)}&cwd=${encodeURIComponent(cwd || '')}`
+    );
+    // Use POST via fetch+ReadableStream for SSE with body
+    es.close();
+    // Fallback: use fetch with streaming
+    fetch(`${API}/api/terminal`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ command: cmd, cwd: cwd || '' }),
+    }).then(async (res) => {
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.line !== undefined) out.push(data.line);
+              if (data.error) out.push(`ERROR: ${data.error}`);
+            } catch {}
+          }
+        }
+      }
+      resolve(out.join('\n') || '(no output)');
+    }).catch(err => resolve(`Error: ${err.message}`));
+  });
+}
+
+async function runTerminal() {
+  const cmd = document.getElementById('termCmd').value.trim();
+  const cwd = document.getElementById('termCwd').value.trim();
+  if (!cmd) return;
+  const out = document.getElementById('termOutput');
+  out.innerHTML = `<span class="t-sys">$ ${cmd}</span>`;
+
+  const res = await fetch(`${API}/api/terminal`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ command: cmd, cwd }),
+  });
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+    const chunk = decoder.decode(value);
+    chunk.split('\n').forEach(line => {
+      if (!line.startsWith('data: ')) return;
+      try {
+        const data = JSON.parse(line.slice(6));
+        if (data.line !== undefined) {
+          const el = document.createElement('div');
+          el.className = 't-line';
+          el.textContent = data.line;
+          out.appendChild(el);
+          out.scrollTop = out.scrollHeight;
+        }
+        if (data.exit_code !== undefined) {
+          const el = document.createElement('div');
+          el.className = data.exit_code === 0 ? 't-sys' : 't-err';
+          el.textContent = `\n[exit: ${data.exit_code}]`;
+          out.appendChild(el);
+        }
+      } catch {}
+    });
+  }
+}
+
+function fillCmd(cmd) {
+  document.getElementById('termCmd').value = cmd;
+  switchTab('terminal');
+}
+
+// ── Code ──────────────────────────────────────────────────────────────────────
+async function runCode() {
+  const code = document.getElementById('codeInput').value;
+  const language = document.getElementById('codeLang').value;
+  const out = document.getElementById('codeOutput');
+  out.innerHTML = '<span class="t-sys">Running…</span>';
+  const res = await apiPost('/api/code/run', { code, language });
+  out.innerHTML = '';
+  if (res.stdout) {
+    res.stdout.split('\n').forEach(l => {
+      const el = document.createElement('div'); el.className = 't-line'; el.textContent = l;
+      out.appendChild(el);
+    });
+  }
+  if (res.stderr) {
+    res.stderr.split('\n').forEach(l => {
+      const el = document.createElement('div'); el.className = 't-err'; el.textContent = l;
+      out.appendChild(el);
+    });
+  }
+}
+
+const TEMPLATES = {
+  'yt-dl': `import subprocess
+url = "https://www.youtube.com/watch?v=YOUR_VIDEO_ID"
+out_dir = "./downloads"
+subprocess.run([
+    "yt-dlp",
+    "-f", "bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]",
+    "-o", f"{out_dir}/%(title)s.%(ext)s",
+    url
+])`,
+  'ffmpeg-py': `import subprocess, shlex
+inp = "input.mp4"
+out = "output.mp4"
+# Add watermark text
+cmd = f'ffmpeg -y -i {inp} -vf "drawtext=text=\'My Channel\':fontsize=36:fontcolor=white:x=20:y=20" {out}'
+subprocess.run(shlex.split(cmd))
+print("Done:", out)`,
+  'dir-scan': `import os, json
+results = []
+for root, dirs, files in os.walk('.'):
+    for f in files:
+        path = os.path.join(root, f)
+        size = os.path.getsize(path)
+        results.append({"path": path, "size_kb": round(size/1024, 1)})
+results.sort(key=lambda x: x['size_kb'], reverse=True)
+for r in results[:20]:
+    print(f"{r['size_kb']:>10} KB  {r['path']}")`,
+  'thumbnail-gen': `from PIL import Image, ImageDraw, ImageFont
+import sys
+
+w, h = 1280, 720
+bg = Image.new('RGB', (w, h), color='#0a0a1a')
+draw = ImageDraw.Draw(bg)
+
+# Gradient bar at bottom
+for y in range(h-80, h):
+    alpha = (y - (h-80)) / 80
+    draw.line([(0, y), (w, y)], fill=(int(100*alpha), int(60*alpha), 255))
+
+draw.text((60, 250), "YOUR TITLE HERE", fill='white')
+draw.text((60, 340), "Subtitle text", fill='#aaaaff')
+bg.save("thumbnail_output.jpg", quality=95)
+print("Saved: thumbnail_output.jpg")`
+};
+
+function loadTemplate(name) {
+  document.getElementById('codeInput').value = TEMPLATES[name] || '';
+  switchTab('code');
+}
+
+// ── Video Edit ────────────────────────────────────────────────────────────────
+async function videoTrim() {
+  const res = await apiPost('/api/video/trim', {
+    input: document.getElementById('trimIn').value,
+    output: document.getElementById('trimOut').value || 'trimmed.mp4',
+    start: document.getElementById('trimStart').value || '0',
+    duration: document.getElementById('trimDur').value || '10',
+  });
+  appendMsg(res.success ? `✅ Trimmed → ${res.output_file}\nCommand: ${res.command}` : `❌ ${res.stderr}`, res.success ? 'system' : 'error');
+}
+
+async function videoMerge() {
+  const files = document.getElementById('mergeFiles').value.split('\n').filter(Boolean);
+  const res = await apiPost('/api/video/merge', {
+    files,
+    output: document.getElementById('mergeOut').value || 'merged.mp4',
+  });
+  appendMsg(res.success ? `✅ Merged → ${res.output_file}` : `❌ ${res.stderr}`, res.success ? 'system' : 'error');
+}
+
+async function videoThumb() {
+  const res = await apiPost('/api/video/thumbnail', {
+    input: document.getElementById('thumbIn').value,
+    output: document.getElementById('thumbOut').value || 'thumbnail.jpg',
+    timestamp: document.getElementById('thumbTs').value || '00:00:05',
+  });
+  appendMsg(res.success ? `✅ Thumbnail → ${res.output_file}` : `❌ ${res.stderr}`, res.success ? 'system' : 'error');
+}
+
+async function videoConvert() {
+  const res = await apiPost('/api/video/convert', {
+    input: document.getElementById('convIn').value,
+    output: document.getElementById('convOut').value || 'output.mp4',
+  });
+  appendMsg(res.success ? `✅ Converted → ${res.output_file}` : `❌ ${res.stderr}`, res.success ? 'system' : 'error');
+}
+
+// ── YouTube ───────────────────────────────────────────────────────────────────
+async function connectYouTube() {
+  const res = await apiFetch('/auth/login');
+  if (res.auth_url) {
+    const popup = window.open(res.auth_url, '_blank', 'width=600,height=700');
+    const check = setInterval(async () => {
+      try {
+        const status = await apiFetch('/auth/status');
+        if (status.authenticated) {
+          clearInterval(check);
+          ytAuthenticated = true;
+          document.getElementById('ytStatus').textContent = 'YouTube: connected';
+          document.getElementById('ytStatus').style.color = 'var(--green)';
+          document.getElementById('ytConnectBtn').textContent = '✓ Connected';
+          document.getElementById('ytConnectBtn').classList.add('active');
+          appendMsg('✅ YouTube connected! You can now upload videos and view analytics.', 'system');
+          loadAnalytics();
+        }
+      } catch {}
+    }, 2000);
+  }
+}
+
+async function uploadVideo() {
+  const data = {
+    file_path: document.getElementById('upFile').value,
+    title: document.getElementById('upTitle').value,
+    description: document.getElementById('upDesc').value,
+    tags: document.getElementById('upTags').value.split(',').map(t => t.trim()).filter(Boolean),
+    privacy: document.getElementById('upPrivacy').value,
+  };
+  const bar = document.getElementById('upProgressBar');
+  const fill = document.getElementById('upProgressFill');
+  const result = document.getElementById('upResult');
+  bar.style.display = 'block';
+  fill.style.width = '10%';
+  result.textContent = 'Uploading…';
+  // Simulate progress during upload
+  let prog = 10;
+  const ticker = setInterval(() => {
+    prog = Math.min(prog + Math.random() * 8, 90);
+    fill.style.width = prog + '%';
+  }, 800);
+  const res = await apiPost('/api/youtube/upload', data);
+  clearInterval(ticker);
+  fill.style.width = '100%';
+  if (res.video_id) {
+    result.innerHTML = `✅ Uploaded! <a href="${res.url}" target="_blank" style="color:var(--accent2)">${res.url}</a>`;
+    appendMsg(`✅ Video uploaded: ${res.url}`, 'system');
+  } else {
+    result.style.color = 'var(--red)';
+    result.textContent = `❌ ${res.error}`;
+  }
+}
+
+async function loadAnalytics() {
+  const ch = await apiFetch('/api/youtube/channel');
+  if (ch.error) {
+    document.getElementById('statSubs').textContent = '—';
+    return;
+  }
+  document.getElementById('statSubs').textContent = fmtNum(ch.subscribers);
+  document.getElementById('statViews').textContent = fmtNum(ch.views);
+  document.getElementById('statVids').textContent = ch.videos;
+  document.getElementById('statName').textContent = ch.title || '—';
+
+  // Load recent videos
+  const vids = await apiFetch('/api/youtube/videos?max=8');
+  const list = document.getElementById('videoList');
+  list.innerHTML = '';
+  (vids.videos || []).forEach(v => {
+    const el = document.createElement('div');
+    el.className = 'video-item';
+    el.innerHTML = `
+      <img src="${v.thumbnail || ''}" alt="">
+      <div class="vinfo">
+        <div class="vtitle">${v.title}</div>
+        <div class="vmeta">${new Date(v.published).toLocaleDateString()}</div>
+      </div>`;
+    el.onclick = () => loadVideoAnalytics(v.id, v.title);
+    list.appendChild(el);
+  });
+}
+
+async function loadVideoAnalytics(id, title) {
+  const res = await apiFetch(`/api/youtube/analytics?video_id=${id}`);
+  if (res.error) return;
+  appendMsg(`📊 **${title}**\n👁 Views: ${fmtNum(res.views)}\n👍 Likes: ${fmtNum(res.likes)}\n💬 Comments: ${fmtNum(res.comments)}`, 'ai');
+  switchTab('chat');
+}
+
+// ── Tabs ──────────────────────────────────────────────────────────────────────
+function switchTab(name) {
+  currentTab = name;
+  document.querySelectorAll('.tabs .tab').forEach((el, i) => {
+    const tabs = ['chat','terminal','video','code','youtube','analytics'];
+    el.classList.toggle('active', tabs[i] === name);
+  });
+  const panels = {
+    chat: 'panel-chat', terminal: 'panel-terminal', video: 'panel-video',
+    code: 'panel-code', youtube: 'panel-youtube', analytics: 'panel-analytics'
+  };
+  document.querySelectorAll('.tab-page').forEach(p => p.classList.remove('active'));
+  const target = panels[name];
+  if (target) document.getElementById(target).classList.add('active');
+}
+
+function switchPanel(name) {
+  currentPanel = name;
+  document.querySelectorAll('.panel-tab').forEach((el, i) => {
+    el.classList.toggle('active', ['tools','history'][i] === name);
+  });
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+async function apiFetch(path) {
+  try {
+    const res = await fetch(API + path);
+    return await res.json();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+async function apiPost(path, data) {
+  try {
+    const res = await fetch(API + path, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    });
+    return await res.json();
+  } catch (e) {
+    return { error: e.message };
+  }
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+  return String(n);
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+(async () => {
+  // Check backend
+  try {
+    const s = await fetch(`${API}/auth/status`);
+    const d = await s.json();
+    if (d.authenticated) {
+      ytAuthenticated = true;
+      document.getElementById('ytStatus').textContent = 'YouTube: connected';
+      document.getElementById('ytStatus').style.color = 'var(--green)';
+      document.getElementById('ytConnectBtn').classList.add('active');
+      document.getElementById('ytConnectBtn').textContent = '✓ Connected';
+    }
+  } catch {
+    appendMsg('⚠️ Backend server not running. Start it with: python server.py', 'error');
+  }
+})();
+</script>
+</body>
+</html>
